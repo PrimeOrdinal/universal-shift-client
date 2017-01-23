@@ -1,0 +1,228 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-layout/app-grid/app-grid-style.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="universal-shift-view-gamepad">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+
+      header {
+        padding: 1rem;
+      }
+    </style>
+
+    <style include="app-grid-style">
+      :host {
+        --app-grid-columns: 2;
+        /*--app-grid-item-height: 100px;*/
+        --app-grid-gutter: 1rem;
+      }
+    </style>
+
+    <header>
+      <h1 id="start">Press a button on your controller to start</h1>
+    </header>
+
+    <div class="app-grid">
+      <template is="dom-repeat" items="[[connectedControllers]]">
+        <paper-card image="images/controllers/xbox-one-pad-white.jpg">
+          <div class="card-content">
+            <header>
+              <h1 id="id">[[item.id]]</h1>
+              <div id="buttons">
+                [[JSON.stringify(item)]]
+                <template is="dom-repeat" items="[[item.buttons]]">
+                  bbb
+                  <span>yay</span>
+                  <span>{{item}}</span>
+                </template>
+              </div>
+            </header>
+            <div class="controller-rating">
+              <iron-icon class="star" icon="star"></iron-icon>
+              <iron-icon class="star" icon="star"></iron-icon>
+              <iron-icon class="star" icon="star"></iron-icon>
+              <iron-icon class="star" icon="star"></iron-icon>
+              <iron-icon class="star" icon="star"></iron-icon>
+            </div>
+            <p>$・Italian, controller</p>
+            <p class="controller-light">Small plates, salads &amp; sandwiches in an intimate setting.</p>
+          </div>
+          <div class="card-actions">
+            <div class="horizontal justified">
+              <paper-icon-button icon="icons:event"></paper-icon-button>
+              <paper-button>5:30PM</paper-button>
+              <paper-button>7:30PM</paper-button>
+              <paper-button>9:00PM</paper-button>
+              <paper-button class="controller-reserve">Reserve</paper-button>
+            </div>
+          </div>
+        </paper-card>
+      </template>
+    </div>
+
+  </template>
+
+  <script>
+    class UniversalShiftViewGamepad extends Polymer.Element {
+      static get is() { return 'universal-shift-view-gamepad'; }
+
+      static get config() {
+        return {
+          /* properties, observers meta data */
+          properties: {
+            connectedControllers: {
+              type: Array,
+              notify: true,
+              value: function() {
+                return [];
+              }
+            }
+          }
+        }
+      }
+
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._registerHandlers();
+      }
+
+      _registerHandlers() {
+        /*
+        * Gamepad API Test
+        * Written in 2013 by Ted Mielczarek <ted@mielczarek.org>
+        *
+        * To the extent possible under law, the author(s) have dedicated all copyright and related and neighboring rights to this software to the public domain worldwide. This software is distributed without any warranty.
+        *
+        * You should have received a copy of the CC0 Public Domain Dedication along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+        */
+        const haveEvents = 'GamepadEvent' in window;
+        const haveWebkitEvents = 'WebKitGamepadEvent' in window;
+
+        if (haveEvents) {        
+          window.addEventListener("gamepadconnected", event => this.addgamepad(event.gamepad));
+          window.addEventListener("gamepaddisconnected", event => this.removegamepad(event.gamepad));
+        } else if (haveWebkitEvents) {
+          window.addEventListener("webkitgamepadconnected", event => this.addwebkitgamepad(event.gamepad));
+          window.addEventListener("webkitgamepaddisconnected", event => this.removegamepad(event.gamepad));
+        } else {
+          setInterval(() => this.scangamepads, 500);
+        }
+      }
+
+      addgamepad(gamepad) {
+        console.log(`Adding gamepad ${gamepad.index} (${gamepad.id})`);
+        console.log(gamepad);
+
+        this.connectedControllers[gamepad.index] = gamepad;
+        // let d = document.createElement("div");
+        // d.setAttribute("id", "controller" + gamepad.index);
+        // const t = document.createElement("h1");
+        // t.appendChild(document.createTextNode("gamepad: " + gamepad.id));
+        // d.appendChild(t);
+        // const b = document.createElement("div");
+        // b.className = "buttons";
+        // for (let i=0; i<gamepad.buttons.length; i++) {
+        //   const e = document.createElement("span");
+        //   e.className = "button";
+        //   //e.id = "b" + i;
+        //   e.innerHTML = i;
+        //   b.appendChild(event);
+        // }
+        // d.appendChild(b);
+        // const a = document.createElement("div");
+        // a.className = "axes";
+        // for (i=0; i<gamepad.axes.length; i++) {
+        //   e = document.createElement("progress");
+        //   e.className = "axis";
+        //   //e.id = "a" + i;
+        //   e.setAttribute("max", "2");
+        //   e.setAttribute("value", "1");
+        //   e.innerHTML = i;
+        //   a.appendChild(event);
+        // }
+        // d.appendChild(a);
+        // Polymer.dom(this.root).getElementById("start").style.display = "none";
+        // document.body.appendChild(d);
+        window.requestAnimationFrame(() => this.updateStatus);
+      }
+
+      removegamepad(gamepad) {
+        console.log(`Removing gamepad ${gamepad.index} (${gamepad.id})`);
+        // let d = Polymer.dom(this.root).getElementById("controller" + gamepad.index);
+        // document.body.removeChild(d);
+        // delete this.connectedControllers[gamepad.index];
+      }
+
+      updateStatus() {
+        console.log('raf');
+        this.scangamepads();
+        // for (j in this.connectedControllers) {
+        //   const controller = this.connectedControllers[j];
+        //   const d = Polymer.dom(this.root).getElementById("controller" + j);
+        //   const buttons = d.getElementsByClassName("button");
+        //   for (let i=0; i<controller.buttons.length; i++) {
+        //     const b = buttons[i];
+        //     const val = controller.buttons[i];
+        //     const pressed = val == 1.0;
+        //     if (typeof(val) == "object") {
+        //       pressed = val.pressed;
+        //       val = val.value;
+        //     }
+        //     const pct = Math.round(val * 100) + "%";
+        //     b.style.backgroundSize = pct + " " + pct;
+        //     if (pressed) {
+        //       b.className = "button pressed";
+        //       console.log("button pressed");
+        //     } else {
+        //       b.className = "button";
+        //       console.log("button");
+        //     }
+        //   }
+
+        //   const axes = d.getElementsByClassName("axis");
+        //   for (let i=0; i<controller.axes.length; i++) {
+        //     const a = axes[i];
+        //     a.innerHTML = i + ": " + controller.axes[i].toFixed(4);
+        //     a.setAttribute("value", controller.axes[i] + 1);
+        //   }
+        // }
+        window.requestAnimationFrame(() => this.updateStatus);
+      }
+
+      scangamepads() {
+        let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            if (!(gamepads[i].index in this.connectedControllers)) {
+              this.addgamepad(gamepads[i]);
+            } else {
+              this.connectedControllers[gamepads[i].index] = gamepads[i];
+            }
+          }
+        }
+      }
+
+    }
+
+    customElements.define(UniversalShiftViewGamepad.is, UniversalShiftViewGamepad);
+  </script>
+</dom-module>
