@@ -1,0 +1,98 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/app-layout/app-grid/app-grid-style.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-progress/paper-progress.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="universal-shift-view-user">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+
+      header {
+        padding: 1rem;
+      }
+
+      h1 {
+        flex-basis: 100%;
+      }
+    </style>
+
+    <style include="app-grid-style">
+      :host {
+        --app-grid-columns: 2;
+        /*--app-grid-item-height: 100px;*/
+        --app-grid-gutter: 1rem;
+      }
+
+      fieldset {
+        border: none;
+        margin: 0;
+      }
+    </style>
+
+    <header>
+      <h1>Your profile</h1>
+    </header>
+
+    <form class="app-grid">
+      <fieldset>
+        <paper-textarea label="Address" value={{profile.address}}></paper-textarea>
+        <paper-textarea label="Address" value={{profile.address}}></paper-textarea>
+      </fieldset>
+      <fieldset>
+        <paper-textarea label="Address" value={{profile.address}}></paper-textarea>
+        <paper-textarea label="Address" value={{profile.address}}></paper-textarea>
+      </fieldset>
+    </form>
+
+  </template>
+
+  <script>
+    class UniversalShiftViewUser extends Polymer.Element {
+      static get is() { return 'universal-shift-view-user'; }
+
+      static get config() {
+        return {
+          /* properties, observers meta data */
+          properties: {
+            profile: {
+              type: Object,
+              reflectToAttribute: true,
+              notify: true,
+              value: function() {
+                return {};
+              }
+            }
+          }
+        }
+      }
+
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+      }
+
+    }
+
+    customElements.define(UniversalShiftViewUser.is, UniversalShiftViewUser);
+  </script>
+</dom-module>

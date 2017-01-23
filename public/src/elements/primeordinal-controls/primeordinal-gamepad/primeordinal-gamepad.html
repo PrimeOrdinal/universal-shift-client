@@ -1,0 +1,109 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../../../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="primeordinal-gamepad">
+
+  <script>
+    class PrimeOrdinalGamepad extends Polymer.Element {
+      static get is() { return 'primeordinal-gamepad'; }
+
+      static get config() {
+        return {
+          /* properties, observers meta data */
+          properties: {
+            connectedControllers: {
+              type: Array,
+              notify: true,
+              value: function() {
+                return [];
+              },
+              observer: '_connectedControllersChanged'
+            },
+            connectedControllersCount: {
+              type: Number,
+              reflectToAttribute: true,
+              notify: true,
+              value: 0
+            }
+          }
+        }
+      }
+
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this._registerHandlers();
+        this.getGamepads();
+      }
+
+      _connectedControllersChanged() {
+        this.connectedControllersCount = this.connectedControllers.length;
+      }
+
+      _registerHandlers() {
+        const haveEvents = 'GamepadEvent' in window;
+        const haveWebkitEvents = 'WebKitGamepadEvent' in window;
+
+        if (haveEvents) {        
+          window.addEventListener('gamepadconnected', event => this.addGamepad(event.gamepad));
+          window.addEventListener('gamepaddisconnected', event => this.removeGamepad(event.gamepad));
+        } else if (haveWebkitEvents) {
+          window.addEventListener('webkitgamepadconnected', event => this.addGamepad(event.gamepad));
+          window.addEventListener('webkitgamepaddisconnected', event => this.removeGamepad(event.gamepad));
+        } else {
+          setInterval(() => this.getGamepads, 500);
+        }
+      }
+
+    //   updateStatus() {
+    //     this.getGamepads();
+    //   }
+
+      addGamepad(gamepad) {
+        console.log(`Adding gamepad ${gamepad.index} (${gamepad.id})`);
+
+        // this.connectedControllers[gamepad.index] = gamepad;
+        this.push('connectedControllers', gamepad);
+      }
+
+      removeGamepad(gamepad) {
+        console.log(`Removing gamepad ${gamepad.index} (${gamepad.id})`);
+
+        // delete this.connectedControllers[gamepad.index];
+
+        const index = this.connectedControllers.indexOf(gamepad);
+        this.splice('connectedControllers', index, 1);
+      }
+
+      getGamepads() {
+        let gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            if (!(gamepads[i].index in this.connectedControllers)) {
+              this.addGamepad(gamepads[i]);
+            } else {
+              // this.connectedControllers[gamepads[i].index] = gamepads[i];
+              // this.push('connectedControllers', gamepads[i]);
+            }
+          }
+        }
+      }
+
+    }
+
+    customElements.define(PrimeOrdinalGamepad.is, PrimeOrdinalGamepad);
+  </script>
+</dom-module>

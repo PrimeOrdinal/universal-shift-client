@@ -20,7 +20,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/paper-badge/paper-badge.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-document.html">
+<link rel="import" href="./elements/primeordinal-controls/primeordinal-controls.html">
 <link rel="import" href="universal-shift-icons.html">
 
 <dom-module id="universal-shift-app">
@@ -33,6 +39,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         display: block;
       }
 
+      app-header-layout {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
       app-header {
         color: #fff;
         background-color: var(--app-primary-color);
@@ -40,6 +52,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       app-header paper-icon-button {
         --paper-icon-button-ink-color: white;
+      }
+
+      app-header-layout iron-pages {
+        flex: 1;
+        min-height: calc(100% - 4rem);
+      }
+
+      app-header-layout footer {
+        display: flex;
+        min-height: 4rem;
       }
 
       .drawer-list {
@@ -78,6 +100,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         <app-toolbar>Menu</app-toolbar>
         <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
           <a name="view-gamepad" href="/view-gamepad">View Gamepad</a>
+          <a name="view-user" href="/view-user">View User</a>
           <a name="view1" href="/view1">View One</a>
           <a name="view2" href="/view2">View Two</a>
           <a name="view3" href="/view3">View Three</a>
@@ -103,14 +126,36 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             attr-for-selected="name"
             fallback-selection="view404"
             role="main">
-          <universal-shift-view-gamepad name="view-gamepad"  connected-controllers="{{connectedControllers}}"></universal-shift-view-gamepad>
+          <universal-shift-view-gamepad name="view-gamepad" connected-controllers="{{connectedControllers}}"></universal-shift-view-gamepad>
+          <universal-shift-view-user name="view-user" profile="{{profile}}"></universal-shift-view-user>
           <universal-shift-view1 name="view1"></universal-shift-view1>
           <universal-shift-view2 name="view2"></universal-shift-view2>
           <universal-shift-view3 name="view3"></universal-shift-view3>
           <universal-shift-view404 name="view404"></universal-shift-view404>
         </iron-pages>
+
+        <footer>
+          <paper-button id="signIn" on-tap="_signIn" hidden$="[[offline]]">Sign in</paper-button>
+          <!--<paper-fab icon="device:signal-wifi-off" label="Application offline" hidden$="[[!offline]]"></paper-fab>-->
+        </footer>
       </app-header-layout>
     </app-drawer-layout>
+
+    <primeordinal-gamepad connected-controllers="{{connectedControllers}}"></primeordinal-gamepad>
+
+    <firebase-app
+      api-key="AIzaSyDACc7PH0YGATgH9SW1eqUPmTuBbF99tVQ"
+      auth-domain="universal-shift.firebaseapp.com"
+      database-url="https://universal-shift.firebaseio.com/"
+      messaging-sender-id="36318597755"
+      name="universal-shift"
+      storage-bucket="universal-shift.appspot.com">
+    </firebase-app>
+
+    <firebase-auth id="googleAuth" app-name="universal-shift" user="{{user}}" provider="google" on-error="handleError"></firebase-auth>
+
+    <!--<firebase-document id="profile" path="/users/[[user.uid]]/profile" data="{{profile}}"></firebase-document>-->
+
   </template>
 
   <script>
@@ -125,9 +170,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               reflectToAttribute: true,
               observer: '_pageChanged'
             },
+            profile: {
+              type: Object,
+              reflectToAttribute: true,
+              notify: true,
+              value: function() {
+                return {};
+              },
+              observer: '_profileChanged'
+            },
             connectedControllers: {
               type: Array,
-              notify: true,
+              // notify: true,
               value: function() {
                 return [];
               },
@@ -141,11 +195,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             },
             offline: {
               type: Boolean,
-              value: false
-            },
+              reflectToAttribute: true,
+              value: false,
+              notify: true
+            }
           },
           observers: [
-            '_routePageChanged(routeData.page)'
+            '_routePageChanged(routeData.page)',
+            '_autoAuth(user, statusKnown)'
           ],
         }
       }
@@ -153,10 +210,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       connectedCallback() {
         super.connectedCallback();
         this._setOfflineStatus();
-        this.connectedControllers = [
-          {id: 'Xbox One', index: 0},
-          {id: 'Playstation 4', index: 1}
-        ];
+        this._authStateChanged()
+      }
+
+      handleError(error) {
+        console.error(error);
+      }
+
+      _autoAuth(user, statusKnown) {
+        if (statusKnown && !user) {
+          this.$.googleAuth.signInAnonymously();
+        }
+      }
+
+      // _signIn() {
+      //   let google = new firebase.auth.GoogleAuthProvider();
+      //   this.user.linkWithPopup(google);
+      // }
+
+      _signIn() {
+        this.$.googleAuth.signInWithPopup();
+      }
+
+      _signOut() {
+        this.$.googleAuth.signOut();
+      }
+
+      _authStateChanged() {
+        this.$.googleAuth.auth.onAuthStateChanged((user) => {
+          if (!!user) {
+            this.$.signIn.hidden = true;
+          } else {
+            this.$.signIn.hidden = false;
+          }
+          console.log('user', user);
+        });
       }
 
       _routePageChanged(page) {
@@ -169,8 +257,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         Polymer.Utils.importHref(resolvedPageUrl, this._pageLoaded, ()=>this._showPage404(), true);
       }
 
+      _profileChanged(profile) {
+        console.log('Profile changed', profile);
+      }
+
       _pageLoaded(page) {
-        console.log('page', page);
+        console.log('Page loaded', page);
       }
 
       _showPage404() {
